@@ -48,8 +48,17 @@ _Noreturn extern void fatal(const char* fmt, ...);
 /////////////////////////////////////////////
 // Put your declarations here
 
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#define WORLDSIZE_NAME "MIMPI_worldsize"
+#define RANK_NAME "MIMPI_rank"
+#define FREE_FD 20
 
-
+// writing from src to tgt among n instances
+#define WRITE_DESC(src, tgt, n) (FREE_FD + 2 * (src) * (n) + 2 * (tgt) + 1)
+// reading from src to tgt among n instances
+#define READ_DESC(src, tgt, n) (FREE_FD + 2 * (src) * (n) + 2 * (tgt))
 
 
 #endif // MIMPI_COMMON_H
