@@ -1,0 +1,118 @@
+valgrind --track-fds=yes -s ./mimpirun 3 valgrind --leak-check=full -s --track-origins=yes --track-fds=yes examples_build/send_recv 
+
+Barrier:
+/*int n = MIMPI_World_size(), myrank = MIMPI_World_rank();
+    int children[2] = {2 * myrank + 1, 2 * myrank + 2};
+    int parent = (myrank - 1) / 2;
+    char msg = 's'; // s - success, b - barrier broken
+    for (int i = 0; i < 2; i++) {
+        if (children[i] < n) {
+                if (MIMPI_Recv(&msg, 1, children[i], BARRIER_TAG) ==
+                    MIMPI_ERROR_REMOTE_FINISHED || msg == 'b') {
+                        msg = 'b';
+                        MIMPI_Send(&msg, 1, parent, BARRIER_TAG);
+                        MIMPI_Send(&msg, 1, children[1 - i], BARRIER_TAG);
+                        return MIMPI_ERROR_REMOTE_FINISHED;
+            }
+        }
+    }
+    MIMPI_Send(&msg, 1, parent, BARRIER_TAG);
+    if (myrank > 0) {
+        if (MIMPI_Recv(&msg, 1, parent, BARRIER_TAG) ==
+            MIMPI_ERROR_REMOTE_FINISHED || msg == 'b') {
+                msg = 'b';
+                MIMPI_Send(&msg, 1, children[0], BARRIER_TAG);
+                MIMPI_Send(&msg, 1, children[1], BARRIER_TAG);
+                return MIMPI_ERROR_REMOTE_FINISHED;
+        }
+    }
+    MIMPI_Send(&msg, 1, children[0], BARRIER_TAG);
+    MIMPI_Send(&msg, 1, children[1], BARRIER_TAG);
+    return MIMPI_SUCCESS;*/
+
+Reduce:
+#if 0
+    int n = MIMPI_World_size(), myrank = MIMPI_World_rank();
+    // tree version
+    int children[2] = {2 * myrank + 1, 2 * myrank + 2};
+    int parent = (myrank - 1) / 2;
+    reorganise(children, &parent, root, myrank);
+    MIMPI_Retcode res = MIMPI_Barrier();
+    if (res != MIMPI_SUCCESS)
+        return res;
+    
+
+    int8_t rcv[count], ans[count];
+    memcpy(ans, send_data, count);
+    for (int i = 0; i < 2; i++)
+        if (children[i] < n) {
+            res = MIMPI_Recv(rcv, count, children[i], REDUCE_TAG);
+            if (res != MIMPI_SUCCESS)
+                return res;
+            switch (op) {
+            case MIMPI_MAX:
+                for (int j = 0; j < count; j++)
+                    if (rcv[j] > ans[j])
+                        ans[j] = rcv[j];
+                break;
+            case MIMPI_MIN:
+                for (int j = 0; j < count; j++)
+                    if (rcv[j] < ans[j])
+                        ans[j] = rcv[j];
+                break;
+            case MIMPI_SUM:
+                for (int j = 0; j < count; j++)
+                    ans[j] += rcv[j];
+                break;   
+            case MIMPI_PROD:
+                for (int j = 0; j < count; j++)
+                    ans[j] *= rcv[j];
+                break;
+            }
+        }
+    if (myrank == root)
+        memcpy(recv_data, ans, count);
+    else
+        MIMPI_Send(ans, count, parent, REDUCE_TAG);
+
+    // end of tree version
+    /*if (myrank != root) {
+        res = MIMPI_Send(send_data, count, root, BRODCAST_TAG);
+        if (res != MIMPI_SUCCESS)
+            return res;
+    }
+    else {
+        int8_t* ans = recv_data;
+        int8_t rcv[count];
+        for (int i = 0; i < count; i++)
+            ans[i] = ((int8_t*) send_data)[i];
+        for (int i = 0; i < n; i++) {
+            if (i != myrank) {
+                res = MIMPI_Recv(rcv, count, i, BRODCAST_TAG);
+                if (res != MIMPI_SUCCESS)
+                    return res;
+                switch (op) {
+                case MIMPI_MAX:
+                    for (int j = 0; j < count; j++)
+                        if (rcv[j] > ans[j])
+                            ans[j] = rcv[j];
+                    break;
+                case MIMPI_MIN:
+                    for (int j = 0; j < count; j++)
+                        if (rcv[j] < ans[j])
+                            ans[j] = rcv[j];
+                    break;
+                case MIMPI_SUM:
+                    for (int j = 0; j < count; j++)
+                        ans[j] += rcv[j];
+                    break;   
+                case MIMPI_PROD:
+                    for (int j = 0; j < count; j++)
+                        ans[j] *= rcv[j];
+                    break;
+                }
+            }
+        }
+    }*/
+    return MIMPI_SUCCESS;
+#endif

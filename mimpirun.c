@@ -80,6 +80,12 @@ int main(int argc, char *argv[]) {
                         ASSERT_SYS_OK(close(pipe_r[j][k]));
                         pipe_r[j][k] = -1;
                     }
+                    else if (k == i && j == i) {
+                        ASSERT_SYS_OK(close(pipe_r[j][k]));
+                        pipe_r[j][k] = -1;
+                        ASSERT_SYS_OK(close(pipe_w[j][k]));
+                        pipe_w[j][k] = -1;
+                    }
                 }
             }
         }
