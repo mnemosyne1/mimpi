@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdnoreturn.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h> // TODO: tmp
 
 /*
     Assert that expression doesn't evaluate to -1 (as almost every system function does in case of error).

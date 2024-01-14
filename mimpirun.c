@@ -4,10 +4,8 @@
 
 #include "mimpi_common.h"
 #include "channel.h"
-#include <pthread.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <stdio.h> // TMP
 
 int main(int argc, char *argv[]) {
     // 1. prepare
@@ -89,7 +87,6 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        //usleep(10000); // TMP
     }
 
 
@@ -99,5 +96,6 @@ int main(int argc, char *argv[]) {
 
 
     // 4. finish
-    
+    ASSERT_SYS_OK(unsetenv(WORLDSIZE_NAME));
+    return 0;
 }
