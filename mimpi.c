@@ -6,6 +6,7 @@
 #include "mimpi.h"
 #include "mimpi_common.h"
 #include <pthread.h>
+#include <stdio.h>
 
 #define BRODCAST_TAG -1
 #define REDUCE_TAG -2
@@ -50,10 +51,11 @@ void MIMPI_Init(bool enable_deadlock_detection) {
     if (enable_deadlock_detection)
         TODO
     int myrank = MIMPI_World_rank(), n = MIMPI_World_size();
-    pthread_t *threads = malloc (n * sizeof(pthread_t));
-    pthread_mutex_t *mutexes = malloc (n * sizeof(pthread_mutex_t));
-    struct message_list_header *lists = malloc (n * sizeof(struct message_list_header));
-    pthread_cond_t *conds = malloc (n * sizeof(pthread_cond_t));
+    pthread_t *threads = (pthread_t*)malloc (n * sizeof(pthread_t));
+    pthread_mutex_t *mutexes = (pthread_mutex_t*)malloc (n * sizeof(pthread_mutex_t));
+    struct message_list_header *lists =
+        (struct message_list_header*) malloc (n * sizeof(struct message_list_header));
+    pthread_cond_t *conds = (pthread_cond_t*) malloc (n * sizeof(pthread_cond_t));
     if (threads == NULL || mutexes == NULL || lists == NULL || conds == NULL)
         syserr("malloc failed");
     for (int i = 0; i < n; i++)
@@ -82,7 +84,8 @@ void MIMPI_Init(bool enable_deadlock_detection) {
 
     for (int i = 0; i < n; i++) {
         if (i != myrank) {
-            struct sent_to_thread* arg = malloc(sizeof(struct sent_to_thread));
+            struct sent_to_thread *arg =
+                (struct sent_to_thread*) malloc(sizeof(struct sent_to_thread));
             if (arg == NULL)
                 syserr("malloc failed");
             arg->source = i;
@@ -320,7 +323,10 @@ MIMPI_Retcode MIMPI_Reduce(
     int parent = (myrank - 1) / 2;
     reorganise(children, &parent, root, myrank);
     char msg = 's'; // s - success, b - barrier broken
-    int8_t ans[count], rcv[count];
+    int8_t *ans = (int8_t*) malloc(count);
+    int8_t *rcv = (int8_t*) malloc(count);
+    if (ans == NULL || rcv == NULL)
+        syserr("malloc failed");
     memcpy(ans, send_data, count);
     for (int i = 0; i < 2; i++) {
         if (children[i] < n) {
@@ -329,6 +335,8 @@ MIMPI_Retcode MIMPI_Reduce(
                     msg = 'b';
                     MIMPI_Send(ans, -count, parent, REDUCE_TAG);
                     MIMPI_Send(&msg, 1, children[1 - i], REDUCE_TAG);
+                    free(ans);
+                    free(rcv);
                     return MIMPI_ERROR_REMOTE_FINISHED;
             }
             switch (op) {
@@ -363,11 +371,15 @@ MIMPI_Retcode MIMPI_Reduce(
                 msg = 'b';
                 MIMPI_Send(&msg, 1, children[0], REDUCE_TAG);
                 MIMPI_Send(&msg, 1, children[1], REDUCE_TAG);
+                free(ans);
+                free(rcv);
                 return MIMPI_ERROR_REMOTE_FINISHED;
         }
     }
     MIMPI_Send(&msg, 1, children[0], REDUCE_TAG);
     MIMPI_Send(&msg, 1, children[1], REDUCE_TAG);    
+    free(ans);
+    free(rcv);
     return MIMPI_SUCCESS;
 }
 
@@ -412,7 +424,7 @@ void *MIMPI_Read (void *arg) {
             }
             left -= res;
         }
-        struct message_list* el = malloc (sizeof(struct message_list));
+        struct message_list* el = (struct message_list*)malloc (sizeof(struct message_list));
         if (el == NULL)
             syserr("malloc failed");
         ASSERT_ZERO(pthread_mutex_lock(sent->mutex));
